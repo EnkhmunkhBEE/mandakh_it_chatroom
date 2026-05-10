@@ -4,7 +4,11 @@
 {% block extra_css %}
 <style>
 html, body { height: 100%; overflow: hidden; }
-.chat-layout { display: flex; height: 100vh; overflow: hidden; }
+.chat-layout { display: flex; height: 100vh; height: 100dvh; overflow: hidden; }
+
+/* hamburger and drawer overlay — only visible on mobile */
+.menu-toggle { display: none; }
+.sidebar-overlay { display: none; }
 
 /* ── sidebar ── */
 .sidebar {
@@ -169,12 +173,74 @@ html, body { height: 100%; overflow: hidden; }
 }
 .send-btn:hover { background: var(--accent2); color: #000; }
 .send-btn:disabled { opacity: .4; cursor: not-allowed; }
+
+/* ── mobile ── */
+@media (max-width: 768px) {
+  .menu-toggle {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 38px; height: 38px; flex-shrink: 0;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; color: var(--text);
+    font-size: 18px; cursor: pointer; padding: 0;
+  }
+  .sidebar {
+    position: fixed; top: 0; left: 0; bottom: 0;
+    width: 82%; max-width: 300px;
+    z-index: 100;
+    transform: translateX(-100%);
+    transition: transform .25s ease;
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .sidebar.open { transform: translateX(0); box-shadow: 0 0 30px rgba(0,0,0,.5); }
+  .sidebar-overlay {
+    display: block;
+    position: fixed; inset: 0; background: rgba(0,0,0,.55);
+    z-index: 99; opacity: 0; pointer-events: none;
+    transition: opacity .25s;
+  }
+  .sidebar-overlay.show { opacity: 1; pointer-events: auto; }
+
+  .chat-header {
+    padding: 10px 14px;
+    padding-top: calc(10px + env(safe-area-inset-top));
+    gap: 10px;
+  }
+  .chat-header > div:first-of-type { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1; }
+  .room-name { font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .room-desc { display: none; }
+  .header-right { gap: 8px; flex-shrink: 0; }
+  .member-count { display: none; }
+  .conn-status { font-size: 10px; padding: 2px 7px; }
+
+  .presence-bar { padding: 5px 12px; font-size: 10px; }
+  .messages-wrap { padding: 12px 12px; }
+  .msg { padding: 5px 4px; gap: 8px; }
+  .msg-avatar { width: 32px; height: 32px; font-size: 12px; }
+  .msg-text { font-size: 14px; }
+  /* hover doesn't exist on touch — keep delete button always visible */
+  .msg-actions {
+    position: static; transform: none; opacity: 1;
+    margin-left: 4px; align-self: flex-start;
+  }
+  .action-btn { padding: 3px 7px; font-size: 10px; }
+
+  .typing-bar { padding: 2px 14px; font-size: 11px; }
+  .chat-input-area {
+    padding: 8px 10px;
+    padding-bottom: calc(10px + env(safe-area-inset-bottom));
+  }
+  .input-row { padding: 8px 10px; gap: 8px; border-radius: 12px; }
+  #msg-input { font-size: 16px; }
+  .send-btn { padding: 8px 14px; font-size: 13px; }
+}
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="chat-layout">
-  <aside class="sidebar">
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+  <aside class="sidebar" id="sidebar">
     <div class="sidebar-header">
       <a href="{% url 'room_list' %}" style="color:var(--accent2); font-size:18px; font-weight:800; text-decoration:none;">← relay</a>
     </div>
@@ -208,8 +274,11 @@ html, body { height: 100%; overflow: hidden; }
   <div class="chat-main">
     <div class="chat-header">
       <div>
-        <div class="room-name"><span>#</span> {{ room.name }}</div>
-        {% if room.description %}<div class="room-desc">{{ room.description }}</div>{% endif %}
+        <button class="menu-toggle" id="menu-toggle" aria-label="Open menu" type="button">☰</button>
+        <div>
+          <div class="room-name"><span>#</span> {{ room.name }}</div>
+          {% if room.description %}<div class="room-desc">{{ room.description }}</div>{% endif %}
+        </div>
       </div>
       <div class="header-right">
         <span class="member-count">{{ room.members.count }} member{{ room.members.count|pluralize }}</span>
@@ -480,6 +549,16 @@ function esc(s) {
     .replace(/&/g,'&amp;').replace(/</g,'&lt;')
     .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
+
+// ── mobile drawer ────────────────────────────────────────────
+const sidebarEl = document.getElementById('sidebar');
+const overlayEl = document.getElementById('sidebar-overlay');
+const menuBtn   = document.getElementById('menu-toggle');
+function openDrawer()  { sidebarEl.classList.add('open');  overlayEl.classList.add('show'); }
+function closeDrawer() { sidebarEl.classList.remove('open'); overlayEl.classList.remove('show'); }
+if (menuBtn)  menuBtn.addEventListener('click', openDrawer);
+if (overlayEl) overlayEl.addEventListener('click', closeDrawer);
+sidebarEl.querySelectorAll('a').forEach(a => a.addEventListener('click', closeDrawer));
 
 // scroll to bottom on load, then connect
 wrap.scrollTop = wrap.scrollHeight;

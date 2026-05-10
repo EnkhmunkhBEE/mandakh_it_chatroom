@@ -36,6 +36,15 @@
 .auth-submit { width: 100%; padding: 13px; font-size: 14px;
   border-radius: 10px; margin-top: 8px; }
 .auth-footer { text-align: center; margin-top: 24px; font-size: 13px; color: var(--muted); }
+
+@media (max-width: 480px) {
+  .auth-wrap { padding: 16px;
+    padding-top: calc(16px + env(safe-area-inset-top));
+    padding-bottom: calc(16px + env(safe-area-inset-bottom));
+  }
+  .auth-card { padding: 32px 22px; border-radius: 16px; }
+  .auth-logo { font-size: 24px; margin-bottom: 24px; }
+}
 </style>
 {% endblock %}
 

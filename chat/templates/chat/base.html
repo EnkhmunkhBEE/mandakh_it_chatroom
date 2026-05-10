@@ -2,12 +2,19 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0d0d0f">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>{% block title %}Relay Chat{% endblock %}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0;
+    -webkit-tap-highlight-color: transparent;
+  }
+  html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 
   :root {
     --bg:       #0d0d0f;
@@ -52,9 +59,16 @@
   .btn-danger:hover { background: #3b1e1e; }
   .btn-sm        { padding: 5px 12px; font-size: 12px; }
 
+  /* prevent iOS Safari from zooming when tapping inputs */
+  input, textarea, select { font-size: 16px; }
+
   .messages-flash {
     position: fixed; top: 16px; right: 16px; z-index: 9999;
     display: flex; flex-direction: column; gap: 8px; max-width: 320px;
+  }
+  @media (max-width: 480px) {
+    .messages-flash { top: 8px; right: 8px; left: 8px; max-width: none; }
+    .flash { font-size: 12px; padding: 10px 14px; }
   }
   .flash {
     padding: 12px 18px; border-radius: 10px; font-size: 13px;

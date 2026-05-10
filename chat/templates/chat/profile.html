@@ -121,12 +121,72 @@
 .current-avatar-row .cur-info { flex: 1; font-size: 13px; color: var(--muted); }
 
 .form-actions { display: flex; gap: 10px; margin-top: 24px; }
+
+/* hamburger / overlay — desktop hidden */
+.menu-toggle { display: none; }
+.mobile-topbar { display: none; }
+.sidebar-overlay { display: none; }
+
+@media (max-width: 768px) {
+  .layout { display: block; }
+
+  .mobile-topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; padding: 12px 14px;
+    padding-top: calc(12px + env(safe-area-inset-top));
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; z-index: 50;
+  }
+  .menu-toggle {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 38px; height: 38px;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; color: var(--text);
+    font-size: 18px; cursor: pointer; padding: 0;
+  }
+
+  .sidebar {
+    position: fixed; top: 0; left: 0; bottom: 0;
+    width: 82%; max-width: 300px;
+    height: 100vh; height: 100dvh;
+    transform: translateX(-100%);
+    transition: transform .25s ease;
+    z-index: 100;
+  }
+  .sidebar.open { transform: translateX(0); box-shadow: 0 0 30px rgba(0,0,0,.5); }
+
+  .sidebar-overlay {
+    display: block;
+    position: fixed; inset: 0; background: rgba(0,0,0,.55);
+    z-index: 99; opacity: 0; pointer-events: none;
+    transition: opacity .25s;
+  }
+  .sidebar-overlay.show { opacity: 1; pointer-events: auto; }
+
+  .main { padding: 20px 14px 32px; }
+  .profile-card { border-radius: 14px; }
+  .profile-banner { height: 90px; }
+  .profile-info { padding: 0 18px 24px; }
+  .avatar-wrap { margin-top: -38px; }
+  .big-avatar { width: 76px; height: 76px; font-size: 30px; border-width: 3px; }
+  .profile-name { font-size: 19px; }
+  .profile-stats { gap: 14px; }
+  .stat-num { font-size: 17px; }
+  .stat-label { font-size: 10px; }
+  .form-actions .btn { width: 100%; justify-content: center; }
+}
 </style>
 {% endblock %}
 
 {% block content %}
+<div class="mobile-topbar">
+  <button class="menu-toggle" id="menu-toggle" aria-label="Open menu" type="button">☰</button>
+  <div class="logo" style="font-size:18px;-webkit-text-fill-color:unset;background:unset;color:var(--accent2);">relay</div>
+  <div style="width:38px;"></div>
+</div>
 <div class="layout">
-  <aside class="sidebar">
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+  <aside class="sidebar" id="sidebar">
     <div class="sidebar-header">
       <a href="{% url 'room_list' %}" class="logo" style="font-size:18px; -webkit-text-fill-color:unset; background:unset; color:var(--accent2);">← relay</a>
     </div>
@@ -235,4 +295,17 @@
     </div>
   </main>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  const sidebarEl = document.getElementById('sidebar');
+  const overlayEl = document.getElementById('sidebar-overlay');
+  const menuBtn   = document.getElementById('menu-toggle');
+  const open  = () => { sidebarEl.classList.add('open');  overlayEl.classList.add('show'); };
+  const close = () => { sidebarEl.classList.remove('open'); overlayEl.classList.remove('show'); };
+  if (menuBtn)  menuBtn.addEventListener('click', open);
+  if (overlayEl) overlayEl.addEventListener('click', close);
+  sidebarEl.querySelectorAll('a').forEach(a => a.addEventListener('click', close));
+</script>
 {% endblock %}
