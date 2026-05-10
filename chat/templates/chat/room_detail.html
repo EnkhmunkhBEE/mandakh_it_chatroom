@@ -253,7 +253,7 @@ html, body { height: 100%; overflow: hidden; }
     {% endfor %}
     <div class="sidebar-footer">
       <div class="user-row">
-        <div class="s-avatar">
+        <div class="s-avatar {% if request.user.is_staff %}admin-ring{% endif %}">
           {% if request.user.profile.avatar %}
             <img src="{{ request.user.profile.avatar.url }}" alt="">
           {% else %}
@@ -261,6 +261,7 @@ html, body { height: 100%; overflow: hidden; }
           {% endif %}
         </div>
         <a href="{% url 'profile_own' %}" class="user-name" style="color:inherit;text-decoration:none;">{{ request.user.username }}</a>
+        {% if request.user.is_staff %}<span class="admin-badge sm">admin</span>{% endif %}
       </div>
       <form method="post" action="{% url 'room_leave' room.slug %}">
         {% csrf_token %}<button type="submit" class="btn btn-danger btn-sm" style="width:100%">Leave room</button>
@@ -293,7 +294,7 @@ html, body { height: 100%; overflow: hidden; }
     <div class="messages-wrap" id="messages">
       {% for msg in messages %}
       <div class="msg {% if msg.author == request.user %}own{% endif %}" data-id="{{ msg.id }}" id="msg-{{ msg.id }}">
-        <div class="msg-avatar" onclick="window.location='/profile/{{ msg.author.username }}/'">
+        <div class="msg-avatar {% if msg.author.is_staff %}admin-ring{% endif %}" onclick="window.location='/profile/{{ msg.author.username }}/'">
           {% if msg.author.profile.avatar %}
             <img src="{{ msg.author.profile.avatar.url }}" alt="{{ msg.author.username }}">
           {% else %}
@@ -303,6 +304,7 @@ html, body { height: 100%; overflow: hidden; }
         <div class="msg-body">
           <div class="msg-meta">
             <a class="msg-author" href="{% url 'profile' msg.author.username %}">{{ msg.author.profile.get_display_name }}</a>
+            {% if msg.author.is_staff %}<span class="admin-badge sm">admin</span>{% endif %}
             <span class="msg-time">{{ msg.timestamp|date:"H:i" }}</span>
           </div>
           <div class="msg-text">{{ msg.content }}</div>
@@ -350,7 +352,7 @@ const presBar   = document.getElementById('presence-bar');
 const wsProto = location.protocol === 'https:' ? 'wss' : 'ws';
 const wsUrl   = `${wsProto}://${location.host}/ws/room/${ROOM_SLUG}/`;
 let socket, reconnectDelay = 1000;
-const onlineUsers = new Set();
+const onlineUsers = new Map(); // username → { is_admin }
 const typingUsers = new Map(); // username → timer
 
 function connect() {
@@ -415,13 +417,16 @@ function renderMsg(m, animate) {
     ? `<img src="${m.avatar_url}" alt="${esc(m.author)}">`
     : m.author[0].toUpperCase();
 
+  const adminBadge = m.is_admin ? '<span class="admin-badge sm">admin</span>' : '';
+  const ringCls = m.is_admin ? ' admin-ring' : '';
   div.innerHTML = `
-    <div class="msg-avatar" onclick="window.location='/profile/${esc(m.author)}/'">
+    <div class="msg-avatar${ringCls}" onclick="window.location='/profile/${esc(m.author)}/'">
       ${avatarInner}
     </div>
     <div class="msg-body">
       <div class="msg-meta">
         <a class="msg-author" href="/profile/${esc(m.author)}/">${esc(m.display_name || m.author)}</a>
+        ${adminBadge}
         <span class="msg-time">${m.timestamp}</span>
       </div>
       <div class="msg-text">${esc(m.content)}</div>
@@ -446,7 +451,7 @@ function handleTyping(data) {
   const name = data.display_name || data.username;
 
   if (data.is_typing) {
-    typingUsers.set(data.username, name);
+    typingUsers.set(data.username, { name, is_admin: !!data.is_admin });
     // auto-clear after 4s silence
     clearTimeout(typingUsers.get('_t_' + data.username));
     typingUsers.set('_t_' + data.username, setTimeout(() => {
@@ -463,18 +468,22 @@ function handleTyping(data) {
 function renderTyping() {
   const users = [...typingUsers.keys()].filter(k => !k.startsWith('_t_'));
   if (!users.length) { typingBar.innerHTML = ''; return; }
-  const names = users.map(u => typingUsers.get(u)).join(', ');
+  const parts = users.map(u => {
+    const info = typingUsers.get(u);
+    const tag = info.is_admin ? ' <span class="admin-badge sm">admin</span>' : '';
+    return `<strong>${esc(info.name)}</strong>${tag}`;
+  });
   const verb = users.length === 1 ? 'is' : 'are';
   typingBar.innerHTML = `
     <span class="typing-dots"><span></span><span></span><span></span></span>
-    <strong>${esc(names)}</strong> ${verb} typing…
+    ${parts.join(', ')} ${verb} typing…
   `;
 }
 
 // ── presence ─────────────────────────────────────────────────
 function handlePresence(data) {
   if (data.action === 'join') {
-    onlineUsers.add(data.username);
+    onlineUsers.set(data.username, { is_admin: !!data.is_admin });
   } else {
     onlineUsers.delete(data.username);
   }
@@ -485,10 +494,17 @@ function renderPresence() {
   const label = presBar.querySelector('span');
   // Remove all chips
   presBar.querySelectorAll('.presence-chip').forEach(c => c.remove());
-  onlineUsers.forEach(u => {
+  onlineUsers.forEach((info, u) => {
     const chip = document.createElement('span');
     chip.className = 'presence-chip';
     chip.textContent = u;
+    if (info && info.is_admin) {
+      const tag = document.createElement('span');
+      tag.className = 'admin-badge sm';
+      tag.textContent = 'admin';
+      tag.style.marginLeft = '4px';
+      chip.appendChild(tag);
+    }
     presBar.appendChild(chip);
   });
 }

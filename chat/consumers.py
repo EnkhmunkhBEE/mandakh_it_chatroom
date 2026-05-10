@@ -45,6 +45,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             'action': 'join',
             'username': self.user.username,
             'display_name': _display_name(self.user),
+            'is_admin': bool(self.user.is_staff),
         })
 
     async def disconnect(self, close_code):
@@ -56,6 +57,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             'action': 'leave',
             'username': self.user.username,
             'display_name': _display_name(self.user),
+            'is_admin': bool(self.user.is_staff),
         })
 
         await self.channel_layer.group_discard(self.group_name, self.channel_name)
@@ -83,6 +85,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 'content': msg['content'],
                 'timestamp': msg['timestamp'],
                 'avatar_url': msg['avatar_url'],
+                'is_admin': msg['is_admin'],
             })
 
         elif kind == 'typing':
@@ -92,6 +95,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 'username': self.user.username,
                 'display_name': _display_name(self.user),
                 'is_typing': data.get('is_typing', False),
+                'is_admin': bool(self.user.is_staff),
                 'sender_channel': self.channel_name,
             })
 
@@ -116,6 +120,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             'content': event['content'],
             'timestamp': event['timestamp'],
             'avatar_url': event['avatar_url'],
+            'is_admin': event.get('is_admin', False),
             'is_own': event['author'] == self.user.username,
         }))
 
@@ -128,6 +133,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             'username': event['username'],
             'display_name': event['display_name'],
             'is_typing': event['is_typing'],
+            'is_admin': event.get('is_admin', False),
         }))
 
     async def presence(self, event):
@@ -136,6 +142,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             'action': event['action'],
             'username': event['username'],
             'display_name': event['display_name'],
+            'is_admin': event.get('is_admin', False),
         }))
 
     async def message_deleted(self, event):
@@ -157,6 +164,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             'content': msg.content,
             'timestamp': msg.timestamp.strftime('%H:%M'),
             'avatar_url': _avatar_url(self.user),
+            'is_admin': bool(self.user.is_staff),
         }
 
     @database_sync_to_async

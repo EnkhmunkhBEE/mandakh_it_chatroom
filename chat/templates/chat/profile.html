@@ -196,7 +196,7 @@
     {% endfor %}
     <div class="sidebar-footer">
       <div class="user-row">
-        <div class="s-avatar">
+        <div class="s-avatar {% if request.user.is_staff %}admin-ring{% endif %}">
           {% if request.user.profile.avatar %}
             <img src="{{ request.user.profile.avatar.url }}" alt="">
           {% else %}
@@ -204,6 +204,7 @@
           {% endif %}
         </div>
         <a href="{% url 'profile_own' %}" class="user-name" style="color:inherit; text-decoration:none;">{{ request.user.username }}</a>
+        {% if request.user.is_staff %}<span class="admin-badge sm">admin</span>{% endif %}
       </div>
       <form method="post" action="{% url 'logout' %}">
         {% csrf_token %}
@@ -217,7 +218,7 @@
       <div class="profile-banner"></div>
       <div class="profile-info">
         <div class="avatar-wrap">
-          <div class="big-avatar">
+          <div class="big-avatar" {% if target.is_staff %}style="border-color:#f59e0b;box-shadow:0 0 0 2px rgba(245,158,11,.4);"{% endif %}>
             {% if profile.avatar %}
               <img src="{{ profile.avatar.url }}" alt="{{ target.username }}">
             {% else %}
@@ -231,6 +232,7 @@
 
         <div class="profile-name">
           {{ profile.display_name|default:target.username }}
+          {% if target.is_staff %}<span class="admin-badge" style="margin-left:8px;vertical-align:3px;">admin</span>{% endif %}
         </div>
         <div class="profile-username">@{{ target.username }}</div>
         <div class="profile-bio">{{ profile.bio|default:"No bio yet." }}</div>

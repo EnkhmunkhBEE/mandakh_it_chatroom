@@ -62,6 +62,21 @@
   /* prevent iOS Safari from zooming when tapping inputs */
   input, textarea, select { font-size: 16px; }
 
+  /* admin badge — used wherever a staff/superuser appears */
+  .admin-badge {
+    display: inline-flex; align-items: center; gap: 3px;
+    padding: 1px 7px; border-radius: 10px;
+    background: linear-gradient(135deg, #f59e0b, #ef4444);
+    color: #fff; font-family: var(--font-ui);
+    font-size: 9px; font-weight: 800;
+    text-transform: uppercase; letter-spacing: .1em;
+    vertical-align: middle; line-height: 1.4;
+    box-shadow: 0 1px 4px rgba(239, 68, 68, .35);
+  }
+  .admin-badge::before { content: '★'; font-size: 9px; }
+  .admin-badge.sm { font-size: 8px; padding: 0 5px; }
+  .admin-ring { box-shadow: 0 0 0 2px #f59e0b inset; }
+
   .messages-flash {
     position: fixed; top: 16px; right: 16px; z-index: 9999;
     display: flex; flex-direction: column; gap: 8px; max-width: 320px;
