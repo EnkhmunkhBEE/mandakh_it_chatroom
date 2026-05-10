@@ -9,8 +9,6 @@ urlpatterns = [
     path('profile/', views.ProfileView.as_view(), name='profile_own'),
     path('profile/<str:username>/', views.ProfileView.as_view(), name='profile'),
     path('room/<slug:slug>/', views.RoomDetailView.as_view(), name='room_detail'),
-    path('room/<slug:slug>/send/', views.MessageSendView.as_view(), name='message_send'),
-    path('room/<slug:slug>/poll/', views.MessagePollView.as_view(), name='message_poll'),
     path('room/<slug:slug>/leave/', views.RoomLeaveView.as_view(), name='room_leave'),
     path('message/<int:pk>/delete/', views.MessageDeleteView.as_view(), name='message_delete'),
 ]
