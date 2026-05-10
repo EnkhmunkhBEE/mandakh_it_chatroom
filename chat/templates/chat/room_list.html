@@ -1,0 +1,185 @@
+{% extends 'chat/base.html' %}
+{% block title %}Rooms — Relay{% endblock %}
+
+{% block extra_css %}
+<style>
+.layout { display: flex; min-height: 100vh; }
+
+.sidebar {
+  width: 280px; flex-shrink: 0;
+  background: var(--surface); border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  position: sticky; top: 0; height: 100vh; overflow-y: auto;
+}
+.sidebar-header {
+  padding: 24px 20px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.logo { font-size: 22px; font-weight: 800; letter-spacing: -.02em;
+  background: linear-gradient(135deg, var(--accent2), #e879f9);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.logo-sub { font-size: 11px; color: var(--muted); letter-spacing: .1em;
+  text-transform: uppercase; margin-top: 2px; }
+
+.user-badge {
+  margin: 16px 20px; padding: 10px 14px;
+  background: var(--surface2); border-radius: 10px;
+  display: flex; align-items: center; gap: 10px;
+  border: 1px solid var(--border);
+}
+.avatar {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: var(--accent); display: grid; place-items: center;
+  font-size: 13px; font-weight: 700; flex-shrink: 0;
+}
+.user-name { font-size: 13px; font-weight: 600; }
+.user-status { font-size: 11px; color: var(--green); }
+
+.sidebar-section { padding: 16px 20px 8px;
+  font-size: 10px; font-weight: 700; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--muted); }
+
+.sidebar-footer {
+  margin-top: auto; padding: 16px 20px;
+  border-top: 1px solid var(--border);
+}
+
+/* main */
+.main { flex: 1; padding: 40px 48px; overflow-y: auto; }
+.page-title { font-size: 32px; font-weight: 800; letter-spacing: -.02em; margin-bottom: 4px; }
+.page-sub { color: var(--muted); font-size: 14px; margin-bottom: 36px; }
+
+.create-form {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 16px; padding: 28px; margin-bottom: 40px;
+}
+.create-form h2 { font-size: 16px; font-weight: 700; margin-bottom: 18px; }
+.form-row { display: flex; gap: 12px; }
+.form-row input[type=text] {
+  flex: 1; padding: 11px 16px;
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 10px; color: var(--text); font-family: var(--font-mono);
+  font-size: 13px; outline: none; transition: border-color .15s;
+}
+.form-row input:focus { border-color: var(--accent); }
+
+.rooms-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+}
+.room-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 14px; padding: 20px 22px;
+  transition: border-color .15s, transform .1s;
+  cursor: pointer; text-decoration: none; display: block; color: inherit;
+}
+.room-card:hover { border-color: var(--accent); transform: translateY(-2px); text-decoration: none; }
+.room-card-name { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+.room-card-desc { font-size: 12px; color: var(--muted); margin-bottom: 12px; min-height: 16px; }
+.room-card-meta { display: flex; align-items: center; justify-content: space-between; }
+.room-card-count { font-size: 11px; color: var(--muted); font-family: var(--font-mono); }
+.room-card-badge { font-size: 10px; padding: 3px 9px; border-radius: 20px;
+  background: #1e1730; border: 1px solid var(--accent); color: var(--accent2);
+  font-weight: 600; letter-spacing: .04em; }
+
+.section-label { font-size: 13px; font-weight: 700; color: var(--muted);
+  text-transform: uppercase; letter-spacing: .08em;
+  margin-bottom: 16px; margin-top: 36px; }
+.empty { color: var(--muted); font-size: 13px; padding: 12px 0; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="logo">relay</div>
+      <div class="logo-sub">local chat</div>
+    </div>
+
+    <a href="{% url 'profile_own' %}" style="text-decoration:none; color:inherit;">
+    <div class="user-badge" style="transition:.15s;" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor=''">
+      <div class="avatar" style="overflow:hidden;">
+        {% if request.user.profile.avatar %}
+          <img src="{{ request.user.profile.avatar.url }}" style="width:100%;height:100%;object-fit:cover;" alt="">
+        {% else %}
+          {{ request.user.username|first|upper }}
+        {% endif %}
+      </div>
+      <div>
+        <div class="user-name">{{ request.user.profile.get_display_name }}</div>
+        <div class="user-status">● online</div>
+      </div>
+    </div>
+    </a>
+
+    <div class="sidebar-section">My Rooms</div>
+    {% for room in my_rooms %}
+      <a href="{% url 'room_detail' room.slug %}" style="display:block; padding: 9px 20px; font-size:13px; color: var(--text); transition:.1s;" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''">
+        # {{ room.name }}
+      </a>
+    {% empty %}
+      <div style="padding:9px 20px; font-size:12px; color:var(--muted);">No rooms yet.</div>
+    {% endfor %}
+
+    <div class="sidebar-footer">
+      <form method="post" action="{% url 'logout' %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-ghost btn-sm" style="width:100%">Sign out</button>
+      </form>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="page-title">Chat Rooms</div>
+    <div class="page-sub">Join a room or create your own</div>
+
+    <div class="create-form">
+      <h2>+ New Room</h2>
+      <form method="post">
+        {% csrf_token %}
+        <div class="form-row">
+          <input type="text" name="name" placeholder="Room name…" required>
+          <input type="text" name="description" placeholder="Description (optional)">
+          <button type="submit" class="btn btn-primary">Create</button>
+        </div>
+      </form>
+    </div>
+
+    {% if my_rooms %}
+    <div class="section-label">Your rooms</div>
+    <div class="rooms-grid">
+      {% for room in my_rooms %}
+      <a class="room-card" href="{% url 'room_detail' room.slug %}">
+        <div class="room-card-name"># {{ room.name }}</div>
+        <div class="room-card-desc">{{ room.description|default:"No description" }}</div>
+        <div class="room-card-meta">
+          <span class="room-card-count">{{ room.members.count }} member{{ room.members.count|pluralize }}</span>
+          <span class="room-card-badge">joined</span>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if other_rooms %}
+    <div class="section-label">All rooms</div>
+    <div class="rooms-grid">
+      {% for room in other_rooms %}
+      <a class="room-card" href="{% url 'room_detail' room.slug %}">
+        <div class="room-card-name"># {{ room.name }}</div>
+        <div class="room-card-desc">{{ room.description|default:"No description" }}</div>
+        <div class="room-card-meta">
+          <span class="room-card-count">{{ room.members.count }} member{{ room.members.count|pluralize }}</span>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if not my_rooms and not other_rooms %}
+    <div class="empty">No rooms exist yet. Create the first one!</div>
+    {% endif %}
+  </main>
+</div>
+{% endblock %}

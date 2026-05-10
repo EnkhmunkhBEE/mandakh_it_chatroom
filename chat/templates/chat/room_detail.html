@@ -1,0 +1,312 @@
+{% extends 'chat/base.html' %}
+{% block title %}#{{ room.name }} — Relay{% endblock %}
+
+{% block extra_css %}
+<style>
+html, body { height: 100%; overflow: hidden; }
+.chat-layout { display: flex; height: 100vh; overflow: hidden; }
+
+/* sidebar */
+.sidebar {
+  width: 240px; flex-shrink: 0;
+  background: var(--surface); border-right: 1px solid var(--border);
+  display: flex; flex-direction: column; overflow-y: auto;
+}
+.sidebar-header { padding: 20px 16px 14px; border-bottom: 1px solid var(--border); }
+.sidebar-section { padding: 14px 16px 6px;
+  font-size: 10px; font-weight: 700; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--muted); }
+.room-link {
+  display: block; padding: 8px 16px; font-size: 13px;
+  color: var(--muted); transition: .12s; border-left: 2px solid transparent;
+}
+.room-link:hover { color: var(--text); background: var(--surface2); text-decoration: none; }
+.room-link.active { color: var(--accent2); border-left-color: var(--accent); background: var(--own-bg); }
+.sidebar-footer { margin-top: auto; padding: 14px 16px; border-top: 1px solid var(--border);
+  display: flex; flex-direction: column; gap: 8px; }
+.user-row { display: flex; align-items: center; gap: 8px; }
+.s-avatar { width: 30px; height: 30px; border-radius: 50%; background: var(--accent);
+  display: grid; place-items: center; font-size: 12px; font-weight: 700;
+  flex-shrink: 0; overflow: hidden; }
+.s-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.user-name { font-size: 13px; font-weight: 600; }
+
+/* main */
+.chat-main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.chat-header {
+  padding: 16px 24px; border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.room-name { font-size: 17px; font-weight: 700; }
+.room-name span { color: var(--muted); font-weight: 400; }
+.room-desc { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.member-count { font-size: 12px; color: var(--muted); font-family: var(--font-mono); }
+
+.messages-wrap {
+  flex: 1; overflow-y: auto; padding: 24px;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.messages-wrap::-webkit-scrollbar { width: 4px; }
+.messages-wrap::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* message */
+.msg {
+  display: flex; gap: 10px; padding: 6px 8px; border-radius: 10px;
+  transition: background .1s; position: relative;
+}
+.msg:hover { background: var(--surface); }
+.msg:hover .msg-actions { opacity: 1; }
+
+.msg-avatar {
+  width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0; margin-top: 1px;
+  background: var(--surface2); border: 1px solid var(--border);
+  display: grid; place-items: center; font-size: 13px; font-weight: 700;
+  overflow: hidden; cursor: pointer; transition: opacity .15s;
+}
+.msg-avatar:hover { opacity: .8; }
+.msg-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.msg.own .msg-avatar { border-color: var(--accent); background: #1e1730; }
+
+.msg-body { flex: 1; min-width: 0; }
+.msg-meta { display: flex; align-items: baseline; gap: 8px; margin-bottom: 3px; }
+.msg-author {
+  font-size: 13px; font-weight: 700; cursor: pointer;
+  transition: color .1s;
+}
+.msg-author:hover { color: var(--accent2); }
+.msg.own .msg-author { color: var(--accent2); }
+.msg-time { font-size: 10px; color: var(--muted); font-family: var(--font-mono); }
+.msg-text { font-size: 14px; line-height: 1.55; color: var(--text);
+  word-break: break-word; white-space: pre-wrap; }
+
+.msg-actions {
+  position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+  opacity: 0; transition: opacity .1s; display: flex; gap: 4px;
+}
+.action-btn {
+  padding: 4px 8px; font-size: 11px; background: var(--surface2);
+  border: 1px solid var(--border); border-radius: 6px; cursor: pointer;
+  color: var(--muted); transition: .1s; font-family: var(--font-ui);
+}
+.action-btn:hover { border-color: var(--red); color: var(--red); }
+
+/* input */
+.chat-input-area {
+  padding: 16px 24px; border-top: 1px solid var(--border);
+  background: var(--surface);
+}
+.input-row {
+  display: flex; gap: 10px; align-items: flex-end;
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 14px; padding: 10px 14px;
+  transition: border-color .15s;
+}
+.input-row:focus-within { border-color: var(--accent); }
+#msg-input {
+  flex: 1; background: none; border: none; outline: none;
+  color: var(--text); font-family: var(--font-ui); font-size: 14px;
+  resize: none; max-height: 120px; line-height: 1.5;
+}
+#msg-input::placeholder { color: var(--muted); }
+.send-btn {
+  background: var(--accent); border: none; color: #fff;
+  border-radius: 9px; padding: 7px 16px; font-family: var(--font-ui);
+  font-size: 13px; font-weight: 600; cursor: pointer; transition: .15s; flex-shrink: 0;
+}
+.send-btn:hover { background: var(--accent2); color: #000; }
+.send-btn:disabled { opacity: .4; cursor: not-allowed; }
+.typing { font-size: 11px; color: var(--muted); padding: 2px 8px; min-height: 18px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="chat-layout">
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <a href="{% url 'room_list' %}" style="color:var(--accent2); font-size:18px; font-weight:800; text-decoration:none;">← relay</a>
+    </div>
+    <div class="sidebar-section">Rooms</div>
+    {% for r in request.user.rooms.all %}
+      <a class="room-link {% if r.slug == room.slug %}active{% endif %}" href="{% url 'room_detail' r.slug %}"># {{ r.name }}</a>
+    {% endfor %}
+    <div class="sidebar-footer">
+      <div class="user-row">
+        <div class="s-avatar">
+          {% if request.user.profile.avatar %}
+            <img src="{{ request.user.profile.avatar.url }}" alt="">
+          {% else %}
+            {{ request.user.username|first|upper }}
+          {% endif %}
+        </div>
+        <a href="{% url 'profile_own' %}" class="user-name" style="color:inherit; text-decoration:none;">{{ request.user.username }}</a>
+      </div>
+      <form method="post" action="{% url 'room_leave' room.slug %}">
+        {% csrf_token %}<button type="submit" class="btn btn-danger btn-sm" style="width:100%">Leave room</button>
+      </form>
+      <form method="post" action="{% url 'logout' %}">
+        {% csrf_token %}<button type="submit" class="btn btn-ghost btn-sm" style="width:100%">Sign out</button>
+      </form>
+    </div>
+  </aside>
+
+  <div class="chat-main">
+    <div class="chat-header">
+      <div>
+        <div class="room-name"><span>#</span> {{ room.name }}</div>
+        {% if room.description %}<div class="room-desc">{{ room.description }}</div>{% endif %}
+      </div>
+      <div class="member-count">{{ room.members.count }} member{{ room.members.count|pluralize }}</div>
+    </div>
+
+    <div class="messages-wrap" id="messages">
+      {% for msg in messages %}
+      <div class="msg {% if msg.author == request.user %}own{% endif %}" data-id="{{ msg.id }}" id="msg-{{ msg.id }}">
+        <div class="msg-avatar" onclick="window.location='/profile/{{ msg.author.username }}/'">
+          {% if msg.author.profile.avatar %}
+            <img src="{{ msg.author.profile.avatar.url }}" alt="{{ msg.author.username }}">
+          {% else %}
+            {{ msg.author.username|first|upper }}
+          {% endif %}
+        </div>
+        <div class="msg-body">
+          <div class="msg-meta">
+            <a class="msg-author" href="{% url 'profile' msg.author.username %}">
+              {{ msg.author.profile.get_display_name }}
+            </a>
+            <span class="msg-time">{{ msg.timestamp|date:"H:i" }}</span>
+          </div>
+          <div class="msg-text">{{ msg.content }}</div>
+        </div>
+        {% if msg.author == request.user %}
+        <div class="msg-actions">
+          <button class="action-btn" onclick="deleteMsg({{ msg.id }})">Delete</button>
+        </div>
+        {% endif %}
+      </div>
+      {% empty %}
+        <div style="text-align:center; color:var(--muted); margin-top:60px; font-size:14px;">
+          No messages yet — say something! 👋
+        </div>
+      {% endfor %}
+    </div>
+
+    <div class="typing" id="typing"></div>
+
+    <div class="chat-input-area">
+      <div class="input-row">
+        <textarea id="msg-input" rows="1" placeholder="Message #{{ room.name }}…"></textarea>
+        <button class="send-btn" id="send-btn">Send</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const ROOM_SLUG = "{{ room.slug }}";
+const ME = "{{ request.user.username }}";
+const CSRF = "{{ csrf_token }}";
+const SEND_URL = "{% url 'message_send' room.slug %}";
+const POLL_URL = "{% url 'message_poll' room.slug %}";
+
+let lastId = {{ messages.last.id|default:0 }};
+const wrap = document.getElementById('messages');
+const input = document.getElementById('msg-input');
+const sendBtn = document.getElementById('send-btn');
+
+function avatarHtml(m) {
+  if (m.avatar_url) {
+    return `<img src="${m.avatar_url}" alt="${escHtml(m.author)}">`;
+  }
+  return m.author[0].toUpperCase();
+}
+
+function renderMsg(m) {
+  const own = m.is_own;
+  const div = document.createElement('div');
+  div.className = 'msg' + (own ? ' own' : '');
+  div.id = 'msg-' + m.id;
+  div.dataset.id = m.id;
+  div.innerHTML = `
+    <div class="msg-avatar" onclick="window.location='/profile/${escHtml(m.author)}/'">
+      ${avatarHtml(m)}
+    </div>
+    <div class="msg-body">
+      <div class="msg-meta">
+        <a class="msg-author" href="/profile/${escHtml(m.author)}/">${escHtml(m.display_name || m.author)}</a>
+        <span class="msg-time">${m.timestamp}</span>
+      </div>
+      <div class="msg-text">${escHtml(m.content)}</div>
+    </div>
+    ${own ? `<div class="msg-actions"><button class="action-btn" onclick="deleteMsg(${m.id})">Delete</button></div>` : ''}
+  `;
+  const placeholder = wrap.querySelector('[style*="No messages"]');
+  if (placeholder) placeholder.remove();
+  wrap.appendChild(div);
+  wrap.scrollTop = wrap.scrollHeight;
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+async function sendMessage() {
+  const content = input.value.trim();
+  if (!content) return;
+  input.value = ''; autoResize();
+  sendBtn.disabled = true;
+  try {
+    const res = await fetch(SEND_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+      body: JSON.stringify({ content })
+    });
+    const data = await res.json();
+    if (data.id) { renderMsg(data); lastId = data.id; }
+  } catch (e) { console.error(e); }
+  sendBtn.disabled = false;
+  input.focus();
+}
+
+async function poll() {
+  try {
+    const res = await fetch(`${POLL_URL}?after=${lastId}`);
+    const data = await res.json();
+    if (data.messages && data.messages.length) {
+      data.messages.forEach(m => {
+        if (document.getElementById('msg-' + m.id)) return;
+        renderMsg(m);
+        lastId = m.id;
+      });
+    }
+  } catch (e) {}
+  setTimeout(poll, 1500);
+}
+
+async function deleteMsg(id) {
+  if (!confirm('Delete this message?')) return;
+  try {
+    const res = await fetch(`/message/${id}/delete/`, { method: 'POST', headers: { 'X-CSRFToken': CSRF } });
+    const data = await res.json();
+    if (data.deleted) {
+      const el = document.getElementById('msg-' + id);
+      if (el) { el.style.opacity = '0'; el.style.transition = '.3s'; setTimeout(() => el.remove(), 300); }
+    }
+  } catch (e) {}
+}
+
+function autoResize() {
+  input.style.height = 'auto';
+  input.style.height = Math.min(input.scrollHeight, 120) + 'px';
+}
+input.addEventListener('input', autoResize);
+input.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+});
+sendBtn.addEventListener('click', sendMessage);
+wrap.scrollTop = wrap.scrollHeight;
+setTimeout(poll, 1500);
+</script>
+{% endblock %}

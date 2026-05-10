@@ -1,0 +1,238 @@
+{% extends 'chat/base.html' %}
+{% block title %}{{ target.username }} — Profile{% endblock %}
+
+{% block extra_css %}
+<style>
+.layout { display: flex; min-height: 100vh; }
+
+.sidebar {
+  width: 240px; flex-shrink: 0;
+  background: var(--surface); border-right: 1px solid var(--border);
+  display: flex; flex-direction: column; overflow-y: auto;
+}
+.sidebar-header { padding: 20px 16px 14px; border-bottom: 1px solid var(--border); }
+.logo { font-size: 20px; font-weight: 800;
+  background: linear-gradient(135deg, var(--accent2), #e879f9);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.room-link {
+  display: block; padding: 8px 16px; font-size: 13px;
+  color: var(--muted); transition: .12s; border-left: 2px solid transparent;
+}
+.room-link:hover { color: var(--text); background: var(--surface2); text-decoration: none; }
+.sidebar-section { padding: 14px 16px 6px;
+  font-size: 10px; font-weight: 700; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--muted); }
+.sidebar-footer { margin-top: auto; padding: 14px 16px; border-top: 1px solid var(--border);
+  display: flex; flex-direction: column; gap: 8px; }
+.user-row { display: flex; align-items: center; gap: 8px; }
+.s-avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--accent);
+  display: grid; place-items: center; font-size: 11px; font-weight: 700;
+  flex-shrink: 0; overflow: hidden; }
+.s-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.user-name { font-size: 13px; font-weight: 600; }
+
+/* profile main */
+.main { flex: 1; overflow-y: auto; padding: 48px; }
+
+.profile-card {
+  max-width: 680px; margin: 0 auto;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 20px; overflow: hidden;
+}
+
+.profile-banner {
+  height: 120px;
+  background: linear-gradient(135deg, #1e0d3a 0%, #0f1940 50%, #0d1a10 100%);
+  position: relative;
+}
+
+.profile-info {
+  padding: 0 32px 32px;
+}
+
+.avatar-wrap {
+  display: flex; align-items: flex-end; justify-content: space-between;
+  margin-top: -48px; margin-bottom: 16px;
+}
+.big-avatar {
+  width: 96px; height: 96px; border-radius: 50%;
+  border: 4px solid var(--surface);
+  background: var(--surface2);
+  overflow: hidden; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 36px; font-weight: 800; color: var(--accent2);
+  position: relative;
+}
+.big-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+.profile-name { font-size: 22px; font-weight: 800; margin-bottom: 4px; }
+.profile-username { font-size: 13px; color: var(--muted); margin-bottom: 10px; }
+.profile-bio { font-size: 14px; color: var(--text); line-height: 1.6; margin-bottom: 20px; min-height: 20px; }
+
+.profile-stats {
+  display: flex; gap: 24px; margin-bottom: 28px;
+  padding: 16px 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+}
+.stat { text-align: center; }
+.stat-num { font-size: 20px; font-weight: 700; }
+.stat-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+
+/* Edit form */
+.edit-form { margin-top: 4px; }
+.edit-form h3 { font-size: 14px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .08em; color: var(--muted); margin-bottom: 20px; }
+.field { margin-bottom: 16px; }
+.field label { display: block; font-size: 11px; font-weight: 600;
+  letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: 7px; }
+.field input[type=text],
+.field textarea {
+  width: 100%; padding: 11px 14px;
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 10px; color: var(--text); font-family: var(--font-ui);
+  font-size: 14px; outline: none; transition: border-color .15s; resize: none;
+}
+.field input:focus, .field textarea:focus { border-color: var(--accent); }
+
+/* Avatar upload zone */
+.avatar-upload {
+  border: 2px dashed var(--border); border-radius: 14px;
+  padding: 24px; text-align: center; cursor: pointer;
+  transition: border-color .15s, background .15s;
+  position: relative; overflow: hidden;
+}
+.avatar-upload:hover { border-color: var(--accent); background: var(--own-bg); }
+.avatar-upload input[type=file] {
+  position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+}
+.upload-icon { font-size: 28px; margin-bottom: 8px; }
+.upload-label { font-size: 13px; color: var(--muted); }
+.upload-label strong { color: var(--accent2); }
+.upload-hint { font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+.current-avatar-row {
+  display: flex; align-items: center; gap: 14px; margin-bottom: 12px;
+  padding: 12px 14px; background: var(--surface2); border-radius: 10px;
+  border: 1px solid var(--border);
+}
+.current-avatar-row img {
+  width: 48px; height: 48px; border-radius: 50%; object-fit: cover;
+  border: 2px solid var(--border);
+}
+.current-avatar-row .cur-info { flex: 1; font-size: 13px; color: var(--muted); }
+
+.form-actions { display: flex; gap: 10px; margin-top: 24px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <a href="{% url 'room_list' %}" class="logo" style="font-size:18px; -webkit-text-fill-color:unset; background:unset; color:var(--accent2);">← relay</a>
+    </div>
+    <div class="sidebar-section">Rooms</div>
+    {% for r in request.user.rooms.all %}
+      <a class="room-link" href="{% url 'room_detail' r.slug %}"># {{ r.name }}</a>
+    {% endfor %}
+    <div class="sidebar-footer">
+      <div class="user-row">
+        <div class="s-avatar">
+          {% if request.user.profile.avatar %}
+            <img src="{{ request.user.profile.avatar.url }}" alt="">
+          {% else %}
+            {{ request.user.username|first|upper }}
+          {% endif %}
+        </div>
+        <a href="{% url 'profile_own' %}" class="user-name" style="color:inherit; text-decoration:none;">{{ request.user.username }}</a>
+      </div>
+      <form method="post" action="{% url 'logout' %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-ghost btn-sm" style="width:100%">Sign out</button>
+      </form>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="profile-card">
+      <div class="profile-banner"></div>
+      <div class="profile-info">
+        <div class="avatar-wrap">
+          <div class="big-avatar">
+            {% if profile.avatar %}
+              <img src="{{ profile.avatar.url }}" alt="{{ target.username }}">
+            {% else %}
+              {{ target.username|first|upper }}
+            {% endif %}
+          </div>
+          {% if is_own %}
+            <a href="#edit-form" class="btn btn-ghost btn-sm">Edit Profile</a>
+          {% endif %}
+        </div>
+
+        <div class="profile-name">
+          {{ profile.display_name|default:target.username }}
+        </div>
+        <div class="profile-username">@{{ target.username }}</div>
+        <div class="profile-bio">{{ profile.bio|default:"No bio yet." }}</div>
+
+        <div class="profile-stats">
+          <div class="stat">
+            <div class="stat-num">{{ target.messages.count }}</div>
+            <div class="stat-label">Messages</div>
+          </div>
+          <div class="stat">
+            <div class="stat-num">{{ target.rooms.count }}</div>
+            <div class="stat-label">Rooms</div>
+          </div>
+          <div class="stat">
+            <div class="stat-num">{{ target.date_joined|date:"Y" }}</div>
+            <div class="stat-label">Joined</div>
+          </div>
+        </div>
+
+        {% if is_own %}
+        <div class="edit-form" id="edit-form">
+          <h3>Edit Profile</h3>
+          <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+
+            <div class="field">
+              <label>Display Name</label>
+              <input type="text" name="display_name" value="{{ profile.display_name }}" placeholder="{{ target.username }}" maxlength="50">
+            </div>
+
+            <div class="field">
+              <label>Bio <span style="color:var(--muted); font-weight:400; text-transform:none;">(160 chars)</span></label>
+              <textarea name="bio" rows="3" maxlength="160" placeholder="Tell people about yourself…">{{ profile.bio }}</textarea>
+            </div>
+
+            <div class="field">
+              <label>Profile Picture</label>
+              {% if profile.avatar %}
+              <div class="current-avatar-row">
+                <img src="{{ profile.avatar.url }}" alt="current avatar">
+                <div class="cur-info">Current photo — upload a new one to replace it, or</div>
+                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--red);">
+                  <input type="checkbox" name="clear_avatar" value="1" style="accent-color:var(--red)"> Remove
+                </label>
+              </div>
+              {% endif %}
+              <div class="avatar-upload">
+                <input type="file" name="avatar" accept="image/jpeg,image/png,image/gif,image/webp">
+                <div class="upload-icon">🖼</div>
+                <div class="upload-label"><strong>Click to upload</strong> or drag & drop</div>
+                <div class="upload-hint">JPEG, PNG, GIF or WebP · max ~5 MB</div>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary">Save Changes</button>
+            </div>
+          </form>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </main>
+</div>
+{% endblock %}

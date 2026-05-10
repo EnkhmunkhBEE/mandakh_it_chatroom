@@ -1,0 +1,67 @@
+{% extends 'chat/base.html' %}
+{% block title %}Register — Relay{% endblock %}
+
+{% block extra_css %}
+<style>
+.auth-wrap {
+  min-height: 100vh; display: grid; place-items: center;
+  background: radial-gradient(ellipse 60% 60% at 50% 0%, #1a0d2e 0%, var(--bg) 70%);
+}
+.auth-card {
+  width: 100%; max-width: 400px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 20px; padding: 44px 40px;
+  box-shadow: 0 40px 80px rgba(0,0,0,.5);
+}
+.auth-logo {
+  font-size: 28px; font-weight: 800; letter-spacing: -.02em;
+  margin-bottom: 32px; text-align: center;
+  background: linear-gradient(135deg, var(--accent2), #e879f9);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.auth-logo span { display: block; font-size: 11px; font-weight: 400;
+  letter-spacing: .15em; text-transform: uppercase;
+  -webkit-text-fill-color: var(--muted); margin-top: 4px; }
+.field { margin-bottom: 18px; }
+.field label { display: block; font-size: 11px; font-weight: 600;
+  letter-spacing: .1em; text-transform: uppercase; color: var(--muted);
+  margin-bottom: 8px; }
+.field input {
+  width: 100%; padding: 12px 16px;
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 10px; color: var(--text); font-family: var(--font-mono);
+  font-size: 14px; outline: none; transition: border-color .15s;
+}
+.field input:focus { border-color: var(--accent); }
+.auth-submit { width: 100%; padding: 13px; font-size: 14px;
+  border-radius: 10px; margin-top: 8px; }
+.auth-footer { text-align: center; margin-top: 24px; font-size: 13px; color: var(--muted); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="auth-wrap">
+  <div class="auth-card">
+    <div class="auth-logo">relay<span>create account</span></div>
+    <form method="post">
+      {% csrf_token %}
+      <div class="field">
+        <label>Username</label>
+        <input type="text" name="username" value="{{ username|default:'' }}" autofocus autocomplete="username">
+      </div>
+      <div class="field">
+        <label>Password</label>
+        <input type="password" name="password1" autocomplete="new-password">
+      </div>
+      <div class="field">
+        <label>Confirm Password</label>
+        <input type="password" name="password2" autocomplete="new-password">
+      </div>
+      <button type="submit" class="btn btn-primary auth-submit">Create Account</button>
+    </form>
+    <div class="auth-footer">
+      Have an account? <a href="{% url 'login' %}">Sign in</a>
+    </div>
+  </div>
+</div>
+{% endblock %}
