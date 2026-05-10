@@ -6,7 +6,7 @@ SECRET_KEY = 'django-insecure-local-chat-key-only-for-dev'
 
 DEBUG = True
 
-ALLOWED_HOSTS = ['mandakh_it_chatroom-1.onrender.com']
+ALLOWED_HOSTS = ['*']
 
 INSTALLED_APPS = [
     'daphne',
